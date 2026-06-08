@@ -9,13 +9,16 @@ npm install
 npm run dev
 ```
 
-The default dev-server base is `/proxy/5173/`, and the default API base is `/proxy/3100`. This matches code-server style external access:
+Dev server is fixed at port `5173` and listens on `0.0.0.0`, so it can be exposed by an external port mapping.
 
-- Admin: `https://code.zyzhou.dpdns.org/proxy/5173/`
-- API: `https://code.zyzhou.dpdns.org/proxy/3100`
+The default API base is the code-server API proxy:
 
-Override them when using different addresses:
+```text
+https://code.zyzhou.dpdns.org/proxy/3100
+```
+
+Override it when using a different backend:
 
 ```bash
-VITE_BASE=/ VITE_API_BASE=http://localhost:3100 npm run dev
+VITE_API_BASE=http://localhost:3100 npm run dev
 ```

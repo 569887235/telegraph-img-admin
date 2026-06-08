@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "/proxy/3100";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://code.zyzhou.dpdns.org/proxy/3100";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
