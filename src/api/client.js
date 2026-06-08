@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3100";
+const API_BASE = import.meta.env.VITE_API_BASE || "/proxy/3100";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
