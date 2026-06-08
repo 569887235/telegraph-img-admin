@@ -9,10 +9,13 @@ npm install
 npm run dev
 ```
 
-The default API base is `/proxy/3100`, which matches code-server style external access such as `https://code.zyzhou.dpdns.org/proxy/3100`.
+The default dev-server base is `/proxy/5173/`, and the default API base is `/proxy/3100`. This matches code-server style external access:
 
-Set `VITE_API_BASE` when using a different API address:
+- Admin: `https://code.zyzhou.dpdns.org/proxy/5173/`
+- API: `https://code.zyzhou.dpdns.org/proxy/3100`
+
+Override them when using different addresses:
 
 ```bash
-VITE_API_BASE=https://code.zyzhou.dpdns.org/proxy/3100 npm run dev
+VITE_BASE=/ VITE_API_BASE=http://localhost:3100 npm run dev
 ```

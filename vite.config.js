@@ -7,6 +7,7 @@ const allowedHosts = (process.env.VITE_ALLOWED_HOSTS || "code.zyzhou.dpdns.org")
   .filter(Boolean);
 
 export default defineConfig({
+  base: process.env.VITE_BASE || "/proxy/5173/",
   plugins: [vue()],
   server: {
     host: "0.0.0.0",
