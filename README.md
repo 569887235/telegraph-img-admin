@@ -9,15 +9,14 @@ npm install
 npm run dev
 ```
 
-Dev server is fixed at port `5173` and listens on `0.0.0.0`, so it can be exposed by an external port mapping.
+The dev server is fixed at port `5173` and listens on `0.0.0.0`, so it can be exposed by an external port mapping.
 
-The default API base is the code-server API proxy:
+Browser requests use same-origin paths. Vite proxies these paths to the API service at `http://127.0.0.1:3100`:
 
-```text
-https://code.zyzhou.dpdns.org/proxy/3100
-```
+- `/api`
+- `/health`
 
-Override it when using a different backend:
+Override the browser API base only when proxying is not desired:
 
 ```bash
 VITE_API_BASE=http://localhost:3100 npm run dev

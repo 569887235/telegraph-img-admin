@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { browseSource, createImportJob, createSource, listSources, testSource } from "../api/client.js";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { browseSource, createImportJob, createSource, getImportJob, listSources, testSource } from "../api/client.js";
 
 const sources = ref([]);
 const selectedSourceId = ref("");
@@ -10,6 +10,7 @@ const loading = ref(false);
 const message = ref("");
 const error = ref("");
 const lastJob = ref(null);
+let jobTimer = null;
 const form = reactive({
   name: "",
   base_url: "",
@@ -24,10 +25,34 @@ const form = reactive({
 });
 
 const selectedSource = computed(() => sources.value.find(item => item.id === selectedSourceId.value));
+const jobItems = computed(() => lastJob.value?.items || []);
+const isJobRunning = computed(() => ["queued", "running"].includes(lastJob.value?.status));
 
 function setStatus(nextMessage = "", nextError = "") {
   message.value = nextMessage;
   error.value = nextError;
+}
+
+function stopJobPolling() {
+  if (jobTimer) clearInterval(jobTimer);
+  jobTimer = null;
+}
+
+async function refreshJob() {
+  if (!lastJob.value?.id) return;
+  try {
+    lastJob.value = await getImportJob(lastJob.value.id);
+    if (!isJobRunning.value) stopJobPolling();
+  } catch (err) {
+    stopJobPolling();
+    setStatus("", err.message);
+  }
+}
+
+function startJobPolling() {
+  stopJobPolling();
+  jobTimer = setInterval(refreshJob, 2000);
+  refreshJob();
 }
 
 async function loadSources() {
@@ -98,7 +123,8 @@ async function startClean(path = browsePath.value) {
       target_path: path || "/",
       recursive: true
     });
-    setStatus(`清洗任务已创建：${lastJob.value.id}`);
+    setStatus(`导入任务已创建：${lastJob.value.id}`);
+    startJobPolling();
   } catch (err) {
     setStatus("", err.message);
   } finally {
@@ -113,6 +139,8 @@ onMounted(async () => {
     setStatus("", err.message);
   }
 });
+
+onUnmounted(stopJobPolling);
 </script>
 
 <template>
@@ -195,7 +223,7 @@ onMounted(async () => {
         <input v-model="browsePath" placeholder="/" @keyup.enter="browse()" />
         <button :disabled="!selectedSourceId || loading" @click="browse()">浏览</button>
         <button :disabled="!selectedSourceId || loading" @click="browse(parentPath(browsePath))">上级</button>
-        <button :disabled="!selectedSourceId || loading" @click="startClean(browsePath)">清洗当前路径</button>
+        <button :disabled="!selectedSourceId || loading" @click="startClean(browsePath)">导入当前路径</button>
       </div>
       <table>
         <thead>
@@ -221,11 +249,56 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
-      <div v-if="lastJob" class="job-summary">
-        <strong>最近任务</strong>
-        <span>{{ lastJob.id }}</span>
-        <span>{{ lastJob.status }}</span>
+    </div>
+
+    <div v-if="lastJob" class="panel browser-panel">
+      <div class="toolbar browser-toolbar">
+        <h3>导入进度</h3>
+        <button :disabled="loading" @click="refreshJob">刷新</button>
       </div>
+      <div class="stats">
+        <span>状态 {{ lastJob.status }}</span>
+        <span>总数 {{ lastJob.total_count || 0 }}</span>
+        <span>成功 {{ lastJob.success_count || 0 }}</span>
+        <span>跳过 {{ lastJob.skipped_count || 0 }}</span>
+        <span>失败 {{ lastJob.failed_count || 0 }}</span>
+      </div>
+      <div class="source-meta">
+        <small>任务 ID：{{ lastJob.id }}</small>
+        <small>路径：{{ lastJob.target_path || "/" }}</small>
+        <small v-if="isJobRunning">自动刷新中</small>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>路径</th>
+            <th>主体</th>
+            <th>套图</th>
+            <th>状态</th>
+            <th>结果</th>
+            <th>SHA256</th>
+            <th>媒体</th>
+            <th>套图 ID</th>
+            <th>错误</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in jobItems" :key="item.id">
+            <td>{{ item.local_path }}</td>
+            <td>{{ item.detected_entity_name || "-" }}</td>
+            <td>{{ item.detected_album_title || "-" }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.action_result || "-" }}</td>
+            <td>{{ item.sha256 || "-" }}</td>
+            <td>{{ item.media_file_id || "-" }}</td>
+            <td>{{ item.album_id || "-" }}</td>
+            <td>{{ item.error || "-" }}</td>
+          </tr>
+          <tr v-if="!jobItems.length">
+            <td colspan="9">暂无导入明细</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 </template>
