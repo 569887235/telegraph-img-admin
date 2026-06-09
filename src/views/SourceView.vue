@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { browseSource, createImportJob, createSource, getImportJob, listSources, testSource } from "../api/client.js";
+import { browseSource, createImportJob, createSource, getImportJob, listSources, listStorageAccounts, testSource } from "../api/client.js";
 
 const sources = ref([]);
 const selectedSourceId = ref("");
+const storageAccounts = ref([]);
+const selectedStorageAccountId = ref("");
+const uploadOriginal = ref(false);
 const browsePath = ref("/");
 const entries = ref([]);
 const loading = ref(false);
@@ -61,12 +64,18 @@ async function loadSources() {
   if (!selectedSourceId.value && sources.value.length) selectedSourceId.value = sources.value[0].id;
 }
 
+async function loadStorageAccounts() {
+  const data = await listStorageAccounts({ status: "active" });
+  storageAccounts.value = data.items || [];
+  if (!selectedStorageAccountId.value && storageAccounts.value.length) selectedStorageAccountId.value = storageAccounts.value[0].id;
+}
+
 async function submitSource() {
   loading.value = true;
   setStatus();
   try {
     const source = await createSource({ source_type: "webdav", ...form });
-    await loadSources();
+    await Promise.all([loadSources(), loadStorageAccounts()]);
     selectedSourceId.value = source.id;
     browsePath.value = "/";
     entries.value = [];
@@ -114,14 +123,16 @@ function parentPath(path) {
 }
 
 async function startClean(path = browsePath.value) {
-  if (!selectedSourceId.value) return;
+  if (!selectedSourceId.value || !selectedStorageAccountId.value) return;
   loading.value = true;
   setStatus();
   try {
     lastJob.value = await createImportJob({
       source_id: selectedSourceId.value,
+      storage_account_id: selectedStorageAccountId.value,
       target_path: path || "/",
-      recursive: true
+      recursive: true,
+      upload_original: uploadOriginal.value
     });
     setStatus(`导入任务已创建：${lastJob.value.id}`);
     startJobPolling();
@@ -134,7 +145,7 @@ async function startClean(path = browsePath.value) {
 
 onMounted(async () => {
   try {
-    await loadSources();
+    await Promise.all([loadSources(), loadStorageAccounts()]);
   } catch (err) {
     setStatus("", err.message);
   }
@@ -223,7 +234,17 @@ onUnmounted(stopJobPolling);
         <input v-model="browsePath" placeholder="/" @keyup.enter="browse()" />
         <button :disabled="!selectedSourceId || loading" @click="browse()">浏览</button>
         <button :disabled="!selectedSourceId || loading" @click="browse(parentPath(browsePath))">上级</button>
-        <button :disabled="!selectedSourceId || loading" @click="startClean(browsePath)">导入当前路径</button>
+        <select v-model="selectedStorageAccountId" class="storage-select">
+          <option value="" disabled>选择电报频道</option>
+          <option v-for="account in storageAccounts" :key="account.id" :value="account.id">
+            {{ account.name }}
+          </option>
+        </select>
+        <label class="check-row import-option">
+          <input v-model="uploadOriginal" type="checkbox" />
+          上传原图
+        </label>
+        <button :disabled="!selectedSourceId || !selectedStorageAccountId || loading" @click="startClean(browsePath)">导入当前路径</button>
       </div>
       <table>
         <thead>
@@ -241,7 +262,7 @@ onUnmounted(stopJobPolling);
             <td>{{ entry.size || "-" }}</td>
             <td>
               <button v-if="entry.type === 'directory'" :disabled="loading" @click="browse(entry.path)">打开</button>
-              <button v-if="entry.type === 'directory'" :disabled="loading" @click="startClean(entry.path)">清洗</button>
+              <button v-if="entry.type === 'directory'" :disabled="!selectedStorageAccountId || loading" @click="startClean(entry.path)">清洗</button>
             </td>
           </tr>
           <tr v-if="!entries.length">
