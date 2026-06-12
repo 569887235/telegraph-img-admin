@@ -19,8 +19,21 @@ function statusLabel(status) {
     queued: "排队",
     running: "运行中",
     finished: "完成",
-    failed: "失败"
+    failed: "失败",
+    hashing: "读取中",
+    uploading: "上传中",
+    linking: "入库中",
+    linked: "已入库",
+    skipped: "跳过",
+    deduped: "已存在"
   }[status] || status || "-";
+}
+
+function itemProgress(item) {
+  const current = Number(item.progress_current || 0);
+  const total = Number(item.progress_total || 0);
+  if (!total) return item.progress_message || "-";
+  return current + "/" + total;
 }
 
 function stopPolling() {
@@ -176,6 +189,7 @@ onUnmounted(stopPolling);
                   <th>主体</th>
                   <th>套图</th>
                   <th>状态</th>
+                  <th>进度</th>
                   <th>结果</th>
                   <th>错误</th>
                 </tr>
@@ -185,12 +199,16 @@ onUnmounted(stopPolling);
                   <td class="path-cell">{{ item.local_path }}</td>
                   <td>{{ item.detected_entity_name || "-" }}</td>
                   <td>{{ item.detected_album_title || "-" }}</td>
-                  <td>{{ item.status }}</td>
+                  <td>{{ statusLabel(item.status) }}</td>
+                  <td class="progress-cell">
+                    <strong>{{ itemProgress(item) }}</strong>
+                    <small v-if="item.progress_message && itemProgress(item) !== item.progress_message">{{ item.progress_message }}</small>
+                  </td>
                   <td>{{ item.action_result || "-" }}</td>
                   <td class="error-cell">{{ item.error || "-" }}</td>
                 </tr>
                 <tr v-if="!jobItems.length">
-                  <td colspan="6">暂无任务明细</td>
+                  <td colspan="7">暂无任务明细</td>
                 </tr>
               </tbody>
             </table>

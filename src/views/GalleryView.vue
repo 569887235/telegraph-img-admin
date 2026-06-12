@@ -186,7 +186,7 @@ onMounted(loadTree);
               @click="selectEntity(entity.id)"
             >
               <span>{{ entity.name }}</span>
-              <small>{{ entity.album_count }} 套 · {{ entity.image_count }} 图</small>
+              <small>{{ entity.album_count }} 套 · {{ entity.image_count }} 图 · {{ entity.video_count }} 视频</small>
             </button>
             <div v-if="selectedEntityId === entity.id" class="album-menu">
               <button
@@ -248,7 +248,7 @@ onMounted(loadTree);
           </form>
 
           <div class="asset-toolbar">
-            <h3>全部图片</h3>
+            <h3>全部媒体</h3>
             <small>{{ selectedAssets.length }} 个资产</small>
           </div>
           <div class="asset-grid">
@@ -266,11 +266,14 @@ onMounted(loadTree);
               >
                 {{ asset.is_cover ? "当前封面" : "设为封面" }}
               </button>
+              <a v-else-if="asset.media_type === 'video' && asset.hls_url" class="asset-action" :href="asset.hls_url" target="_blank" rel="noreferrer">
+                打开 HLS
+              </a>
             </article>
             <p v-if="!selectedAssets.length" class="empty-state">当前套图暂无资产</p>
           </div>
         </div>
-        <div v-else class="empty-detail">选择左侧套图查看全部图片</div>
+        <div v-else class="empty-detail">选择左侧套图查看全部媒体</div>
       </div>
     </div>
   </section>
