@@ -21,3 +21,7 @@ Override the browser API base only when proxying is not desired:
 ```bash
 VITE_API_BASE=http://localhost:3100 npm run dev
 ```
+
+## Display Rules
+
+- API size fields remain numeric bytes. The admin UI formats file sizes in the browser with `formatFileSize`, using `B`, `K`, `M`, and `G` for display only.

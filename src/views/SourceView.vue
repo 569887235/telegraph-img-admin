@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { browseSource, createImportJob, createSource, getImportJob, listSources, listStorageAccounts, testSource } from "../api/client.js";
+import { formatFileSize } from "../utils/format.js";
 
 const sources = ref([]);
 const selectedSourceId = ref("");
@@ -259,7 +260,7 @@ onUnmounted(stopJobPolling);
           <tr v-for="entry in entries" :key="entry.path">
             <td>{{ entry.name }}</td>
             <td>{{ entry.type }}</td>
-            <td>{{ entry.size || "-" }}</td>
+            <td>{{ formatFileSize(entry.size) }}</td>
             <td>
               <button v-if="entry.type === 'directory'" :disabled="loading" @click="browse(entry.path)">打开</button>
               <button v-if="entry.type === 'directory'" :disabled="!selectedStorageAccountId || loading" @click="startClean(entry.path)">清洗</button>

@@ -8,6 +8,7 @@ import {
   setGalleryAlbumCover,
   updateGalleryAlbum
 } from "../api/client.js";
+import { formatFileSize } from "../utils/format.js";
 
 const filters = reactive({ search: "", visibility: "", media_type: "" });
 const entities = ref([]);
@@ -257,7 +258,7 @@ onMounted(loadTree);
               <div v-else class="asset-placeholder">{{ placeholderText(asset) }}</div>
               <div class="asset-copy">
                 <strong>{{ asset.original_name || asset.media_file_id }}</strong>
-                <small>{{ asset.media_type }} · {{ asset.file_size }} B</small>
+                <small>{{ asset.media_type }} · {{ formatFileSize(asset.file_size) }}</small>
               </div>
               <button
                 v-if="asset.media_type === 'image'"
